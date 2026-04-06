@@ -100,15 +100,34 @@ Setting `"width" => 0` removes the border line.
 ## 2. The Change Workflow (no guessing)
 
 ```
-1. GET /render?path=/  →  read current state
-2. Identify the exact element and class to change
+1. GET /render?path=/        →  read current state
+2. Identify exact element and class
 3. Make the change (bridge API or WP-CLI)
-4. POST /cache/flush
-5. GET /render?path=/  →  verify the change is in the HTML
-6. Only then tell the user it's done
+4. Purge LiteSpeed via WP-CLI (see below) — ALWAYS, no exceptions
+5. POST /cache/flush         →  flush WP object cache + transients
+6. Verify with real browser request (curl with User-Agent, NOT /render)
+7. Only then tell the user it's done
 ```
 
-Never skip step 5.
+Never skip steps 4-6. The bridge's /render endpoint fetches internally and can get a cached response. Always verify with a real external curl.
+
+### Cache Purge — Run After Every Single Change
+```bash
+# Step 1: LiteSpeed full purge (Hostinger)
+ssh -i $SSH_KEY -p $SSH_PORT $SSH_USER@$SSH_HOST \
+  "wp litespeed-purge all --path=$WP_PATH"
+
+# Step 2: WP object cache + transients via bridge
+curl -s -X POST -H "X-Mega-Bridge-Key: $KEY" "$WP/wp-json/mega-bridge/v1/cache/flush"
+
+# Step 3: Verify with a real browser-simulated request
+curl -s -A "Mozilla/5.0" "$WP" | grep 'your-selector'
+```
+
+### Why both steps?
+- `cache/flush` hits WP object cache, transients, and Kadence CSS cache
+- `wp litespeed-purge all` hits the LiteSpeed page cache (Hostinger's CDN layer)
+- Without LiteSpeed purge, browsers see stale HTML regardless of what's in the DB
 
 ---
 
