@@ -114,6 +114,11 @@ Never skip step 5.
 
 ## 3. Custom CSS
 
+### ⚠️ Critical: `kadence_custom_css` is a DEAD option
+Kadence no longer reads from `get_option('kadence_custom_css')`. That option does nothing.
+The correct storage is `wp_update_custom_css_post()` / `wp_get_custom_css()` — WordPress core custom CSS.
+The bridge's `/kadence/css` endpoints handle this correctly.
+
 ### Get current CSS:
 ```bash
 curl -s -H "X-Mega-Bridge-Key: $KEY" "$WP/wp-json/mega-bridge/v1/kadence/css"
